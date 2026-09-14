@@ -1,6 +1,6 @@
 # =============================================================================
-# Spatial structure and trap recurrence influence the monitoring efficiency
-# of Anastrepha fraterculus in a commercial apple orchard (Vacaria, RS, Brazil)
+# Spatial structure and recurrence of Anastrepha fraterculus captures
+# in a commercial apple orchard (Vacaria, RS, Brazil)
 #
 # Reproducible analysis script accompanying the manuscript.
 #
@@ -26,17 +26,17 @@
 #    6  Threshold scenarios for the recurrence classes (Tables S2 to S7)
 #    7  Critical events and insecticide applications
 #    8  Permutation inference and multiple-testing correction
-#    9  Hotspot stability (leave-one-event-out; number of neighbours)
-#   10  Fixed-distance neighbourhoods
+#    9  Hotspot stability (leave-one-event-out; number of neighbors)
+#   10  Fixed-distance neighborhoods
 #   11  Sensitivity to the FTD threshold that defines a critical event
 #   12  Leave-one-event-out validation of the recurrence classification
 #   13  Insecticide applications: descriptive assessment
-#   14  Negative-binomial generalised linear mixed models
+#   14  Negative-binomial generalized linear mixed models
 #   15  Figures
 #   16  Export
 #
 # Run from the repository root:  source("spatial_recurrence_analysis.R")
-# On Google Colab, upload Final.xlsx to /content and source this script.
+# On Google Colab, upload trap_captures_long.csv (or Final.xlsx) to /content and source this script.
 # =============================================================================
 
 # ---- 0. Configuration -------------------------------------------------------
@@ -46,11 +46,11 @@ config <- list(
   seed           = 123,
   n_permutations = 999,     # Monte Carlo permutations (global and local Moran)
   ftd_threshold  = 0.5,     # orchard-level FTD defining a critical event
-  k_neighbours   = 4,       # k nearest neighbours for the main analyses
+  k_neighbours   = 4,       # k nearest neighbors for the main analyses
   crs_utm        = 31982,   # SIRGAS 2000 / UTM zone 22S (metres)
   run_glmm       = TRUE     # section 14 takes a few minutes; set FALSE to skip
 )
-if (dir.exists("/content") && file.exists("/content/Final.xlsx")) {   # Google Colab
+if (dir.exists("/content") && (file.exists("/content/Final.xlsx") || file.exists("/content/trap_captures_long.csv"))) {   # Google Colab
   config$master_file <- "/content/Final.xlsx"
   config$output_dir  <- "/content/output"
 }
@@ -171,8 +171,7 @@ csv_file <- file.path(dirname(config$master_file), "trap_captures_long.csv")
 if (file.exists(config$master_file)) {
   records <- build_long_table(config$master_file)
 } else if (file.exists(csv_file)) {
-  cat("Master workbook not found; reading the derived dataset", csv_file, "
-")
+  cat("Master workbook not found; reading the derived dataset", csv_file, "\n")
   records <- read_long_csv(csv_file)
 } else stop("Neither the master workbook nor data/trap_captures_long.csv was found")
 obs <- records %>% filter(valid_reading == 1)
@@ -199,7 +198,7 @@ trap_summary <- obs %>% group_by(Armadilha) %>%
 trap_coords <- utm_coords(trap_summary)
 w_full <- knn_weights(trap_coords, config$k_neighbours)
 nn_distance <- apply(as.matrix(dist(trap_coords)), 1, function(x) mean(sort(x)[2:(config$k_neighbours + 1)]))
-cat(sprintf("Mean distance to the %d nearest neighbours (m): mean %.1f, min %.1f, max %.1f\n",
+cat(sprintf("Mean distance to the %d nearest neighbors (m): mean %.1f, min %.1f, max %.1f\n",
             config$k_neighbours, mean(nn_distance), min(nn_distance), max(nn_distance)))
 
 # ---- 3. Global Moran's I and LISA, full period ------------------------------
@@ -284,7 +283,7 @@ x_crit <- intensity_critical$mean_capture_critical
 moran_crit <- moran.test(x_crit, w_crit)
 print(moran_crit)
 
-# Table S1: sensitivity of the global index to the number of neighbours
+# Table S1: sensitivity of the global index to the number of neighbors
 tbl$S1_moran_by_k <- map_dfr(3:8, function(k) moran_row(x_crit, knn_weights(crit_coords, k), paste0("k = ", k))) %>%
   mutate(across(c(moran_I, expected, variance, z), ~ round(.x, 4)))
 cat("Table S1:\n"); print(as.data.frame(tbl$S1_moran_by_k))
@@ -484,8 +483,8 @@ tbl$hotspot_trap_stability <- lisa_crit %>% select(trap = Armadilha, cluster_all
 cat("High-High traps across leave-one-event-out runs (of", n_events, ") and k = 3..8 (of 6):\n")
 print(as.data.frame(tbl$hotspot_trap_stability))
 
-# ---- 10. Fixed-distance neighbourhoods --------------------------------------
-section("10. Fixed-distance neighbourhoods")
+# ---- 10. Fixed-distance neighborhoods --------------------------------------
+section("10. Fixed-distance neighborhoods")
 radii_m <- c(250, 300, 400, 500, 750, 1000)
 tbl$distance_bands <- map_dfr(radii_m, function(d) {
   nb_c <- dnearneigh(crit_coords, 0, d); w_c <- nb2listw(nb_c, style = "W", zero.policy = TRUE)
@@ -641,7 +640,7 @@ if (config$run_glmm) {
 
   # Sensitivity analyses: (a) without the first inspection of each season, whose exposure interval spans the
   # inter-season gap; (b) with log(1 + mean capture of the previous inspection) as a covariate, to check whether
-  # the associations change when the temporal dependence between successive dates is partly accounted for.
+  # the associations change when the capture level of the preceding date is accounted for.
   first_dates <- obs %>% group_by(s = season_label(Data)) %>% summarise(d = min(Data), .groups = "drop") %>% pull(d)
   lag_tab <- obs %>% group_by(Data) %>% summarise(mc = mean(Capturas), .groups = "drop") %>% arrange(Data) %>% mutate(lag_mc = dplyr::lag(mc))
   f1 <- Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) + scale(wind_ms) + insecticide_7d + season + offset(log(exposure)) + (1 | trap) + (1 | date)
@@ -703,7 +702,7 @@ save_fig(ggplot(stability, aes(Longitude, Latitude, colour = times_high_high)) +
          "fig_hotspot_stability.png")
 save_fig(ggplot(tbl$distance_bands, aes(radius_m, moran_I_critical)) + geom_line() +
            geom_point(aes(shape = p_permutation_critical < 0.05), size = 3) + geom_hline(yintercept = 0, linetype = 2) + theme_paper +
-           labs(title = "Global Moran's I (critical events) by fixed-distance neighbourhood", x = "Radius (m)", y = "Moran's I", shape = "Permutation p < 0.05"),
+           labs(title = "Global Moran's I (critical events) by fixed-distance neighborhood", x = "Radius (m)", y = "Moran's I", shape = "Permutation p < 0.05"),
          "fig_moran_distance_bands.png", 7, 4.5)
 save_fig(ggplot(tbl$loo_validation, aes(factor(held_out_event), spearman_rho, fill = kruskal_p < 0.05)) + geom_col() + theme_paper +
            labs(title = "Leave-one-event-out: recurrence (remaining events) vs capture in held-out event", x = "Held-out event",

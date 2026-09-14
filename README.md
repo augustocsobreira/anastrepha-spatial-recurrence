@@ -1,18 +1,20 @@
-# Spatial structure and trap recurrence in the monitoring of *Anastrepha fraterculus*
+# Spatial structure and recurrence of *Anastrepha fraterculus* captures in a commercial apple orchard
 
-Reproducible analysis code for the manuscript *Spatial Structure and Trap Recurrence Influence the Monitoring Efficiency of Anastrepha fraterculus* (commercial apple orchard, Vacaria, Rio Grande do Sul, Brazil, 2019 to 2025).
+Analysis code and derived dataset for the manuscript *Spatial Structure and Recurrence of Anastrepha fraterculus Captures in a Commercial Apple Orchard* (Vacaria, Rio Grande do Sul, Brazil; 142 McPhail traps, 2019 to 2025), submitted to the *International Journal of Tropical Insect Science*. The release corresponding to the revised manuscript is tagged `v1.0`.
 
 ## Contents
 
 | File | Purpose |
 |---|---|
-| `spatial_recurrence_analysis.R` | Single script that runs the complete analysis, from the master monitoring workbook to every table and figure |
-| `data/Final.xlsx` | Master monitoring workbook (see *Data availability*) |
-| `data/trap_captures_long.csv` | Derived, de-identified trap-level dataset (see *Data availability*); used automatically when the workbook is absent |
-| `output/tables.xlsx` | All tables, one sheet each (generated) |
-| `output/figures/` | Figures at 300 dpi (generated) |
-| `output/analysis_log.txt` | Full console log of the run (generated) |
-| `output/session_info.txt` | R and package versions of the run (generated) |
+| `spatial_recurrence_analysis.R` | Single script that runs the complete analysis and writes every table and figure |
+| `spatial_recurrence_analysis.ipynb` | The same script as a Google Colab notebook |
+| `data/trap_captures_long.csv` | Derived, de-identified trap-level dataset (one row per trap and inspection date) |
+| `output/tables.xlsx` | All tables, one sheet each |
+| `output/figures/` | Figures at 300 dpi |
+| `output/analysis_log.txt` | Console log of the run that produced `output/` |
+| `output/session_info.txt` | R and package versions of that run |
+
+The raw monitoring workbook (`data/Final.xlsx`) is not included (see *Data availability*). When it is absent, the script reads `data/trap_captures_long.csv` and reproduces every output.
 
 ## How to run
 
@@ -28,51 +30,55 @@ or from a shell:
 Rscript spatial_recurrence_analysis.R
 ```
 
-On Google Colab, open `spatial_recurrence_analysis.ipynb` (File > Upload notebook), upload `Final.xlsx` to `/content` through the file panel and run all cells. The configuration cell detects the Colab environment and writes to `/content/output`.
+On Google Colab, open `spatial_recurrence_analysis.ipynb`, upload `data/trap_captures_long.csv` to `/content` through the file panel and run all cells; outputs are written to `/content/output`.
 
-Missing packages are installed automatically. The negative-binomial GLMMs (section 14) take a few minutes; set `config$run_glmm <- FALSE` to skip them.
+Missing packages are installed automatically. The mixed models (section 14) take a few minutes; set `config$run_glmm <- FALSE` to skip them. Random permutations use `set.seed(123)`.
 
-## Input
+## Dataset
 
-`data/Final.xlsx` has two sheets:
+`data/trap_captures_long.csv` has 53,250 rows (142 traps x 375 monitoring dates, 17 Oct 2019 to 24 Apr 2025) and the columns:
 
-- **Consolidado**: one row per monitoring date (375 dates, 17 Oct 2019 to 24 Apr 2025). Columns: date, climate from INMET station A880, orchard-level FTD (flies per trap per day), number of valid traps, lure replacement and insecticide application flags, and one column per McPhail trap (`N°1` to `N°146`; trap numbers 93 to 96 are not used) with the number of *A. fraterculus* captured. The value `-1` means no reading on that date.
-- **Coordenadas Geográficas**: trap name, latitude and longitude (WGS 84).
-
-The script converts the workbook to a long table (one row per trap and date), keeps readings with a non-negative capture as valid, and projects coordinates to SIRGAS 2000 / UTM 22S (EPSG:31982) for all distance-based operations.
+| Column | Content |
+|---|---|
+| `date` | Inspection date |
+| `trap` | Trap identifier (`N°1` to `N°146`; numbers 93 to 96 do not exist) |
+| `latitude`, `longitude` | Trap coordinates (WGS 84); projected by the script to SIRGAS 2000 / UTM 22S (EPSG:31982) |
+| `capture` | Number of *A. fraterculus* captured; `-1` = no reading on that date |
+| `valid_reading` | 1 if `capture` is a valid reading, 0 otherwise |
+| `exposure_days` | Days since the previous inspection of the orchard |
+| `orchard_FTD` | Orchard-level flies per trap per day on the date |
+| `valid_traps`, `total_capture` | Number of traps read and total flies on the date |
+| `precipitation_mm`, `tmax_C`, `tmean_C`, `tmin_C`, `humidity_pct`, `wind_ms` | Daily records of INMET station A880 |
+| `lure_replacement` | 1 = attractant replaced on the date; -1 = not recorded |
+| `insecticide_application` | 1 or 2 = application recorded on the date (codes of the spray log); -1 = none recorded |
 
 ## What the script does
 
 | Section | Analysis | Output sheets |
 |---|---|---|
 | 1 | Data preparation, trap activity by season | `trap_activity`, `traps_per_season` |
-| 2 to 3 | Trap-level summaries, k-nearest-neighbour weights (k = 4), global Moran's I and LISA for the full period | `main_text_numbers` |
-| 4 to 5 | Critical events (orchard FTD > 0.5), recurrence classes, capture intensity, global Moran's I and LISA during critical events, sensitivity to k | `S1_moran_by_k`, `class_summary` |
-| 6 | Threshold scenarios for the recurrence classes, Kruskal-Wallis and Dunn's tests | `S2_class_distribution`, `S3_kruskal_by_scenario`, `S4_dunn_S1_and_S4`, `S5_dunn_S2`, `S6_dunn_S3`, `S7_dunn_S5` |
-| 7 | Critical events cross-referenced with recorded insecticide applications | `critical_events`, `insecticide_applications` |
-| 8 | Monte Carlo permutation tests (999 permutations) for global and local Moran; FDR and Bonferroni corrections for the LISA; overlap between full-period and critical-event hotspots | `moran_global`, `lisa_critical_by_criterion`, `lisa_critical_traps`, `lisa_full_by_criterion`, `hotspot_overlap` |
-| 9 | Hotspot stability: leave-one-event-out and k = 3 to 8 | `hotspot_by_k`, `hotspot_loo_by_event`, `hotspot_trap_stability` |
-| 10 | Fixed-distance neighbourhoods (250 to 1000 m) | `distance_bands` |
+| 2 to 3 | Trap-level summaries, k-nearest-neighbor weights (k = 4), global Moran's I and LISA for the full period | `main_text_numbers`, `lisa_full_by_criterion` |
+| 3b | Global Moran's I and LISA on the non-critical dates and in each growing season, with FDR correction | `moran_by_season`, `lisa_by_season` |
+| 4 to 5 | Critical events (orchard FTD > 0.5), recurrence classes, capture intensity, Moran's I and LISA during critical events, sensitivity to k, common trap sets | `S1_moran_by_k`, `class_summary`, `moran_common_sets` |
+| 6 | Threshold scenarios for the recurrence classes, Kruskal-Wallis and Dunn's tests | `S2_class_distribution`, `S3_kruskal_by_scenario`, `S4_dunn_S1_and_S4` to `S7_dunn_S5` |
+| 7 | Critical events cross-referenced with the insecticide applications | `critical_events`, `insecticide_applications` |
+| 8 | Monte Carlo permutation tests (999 permutations); FDR and Bonferroni corrections; overlap between full-period and critical-event clusters | `moran_global`, `lisa_critical_by_criterion`, `lisa_critical_traps`, `hotspot_overlap` |
+| 9 | Cluster stability: leave-one-event-out and k = 3 to 8 | `hotspot_by_k`, `hotspot_loo_by_event`, `hotspot_trap_stability` |
+| 10 | Fixed-distance neighborhoods (250 to 1000 m) | `distance_bands` |
 | 11 | Sensitivity to the FTD threshold defining a critical event (0.2 to 0.7) | `ftd_threshold_sensitivity` |
-| 12 | Leave-one-event-out validation: traps classified on n − 1 events, classes tested on the held-out event | `loo_validation`, `loo_pooled_by_class` |
-| 13 | Descriptive assessment of orchard FTD around insecticide applications | `ftd_by_application_window`, `ftd_before_after_application` |
-| 14 | Negative-binomial GLMMs with random intercepts for trap and date (glmmTMB) | `glmm_coefficients`, `glmm_random_effects`, `glmm_fit` |
+| 12 | Leave-one-event-out validation: classes defined on n - 1 events and tested on the held-out event | `loo_validation`, `loo_pooled_by_class` |
+| 13 | Orchard FTD around insecticide applications | `ftd_by_application_window`, `ftd_before_after_application` |
+| 14 | Negative-binomial GLMMs (glmmTMB) with random intercepts for trap and date, residual diagnostics and sensitivity analyses | `glmm_coefficients`, `glmm_random_effects`, `glmm_fit`, `glmm_diagnostics`, `glmm_sensitivity` |
 | 15 | Figures | `output/figures/` |
 | 16 | Per-trap table joining all results | `per_trap` |
 
-Random permutations use `set.seed(123)`.
-
 ## Data availability
 
-The raw monitoring workbook (`Final.xlsx`) was provided by Rasip Agro and is subject to data-ownership restrictions; it is not included here and is available from the corresponding author on reasonable request and with the owner's permission. The derived, de-identified analysis dataset needed to reproduce every result is provided as `data/trap_captures_long.csv` (one row per trap and inspection date: date, trap, coordinates, number of A. fraterculus captured, validity flag, exposure interval, orchard-level FTD, number of valid traps, climatic variables from INMET station A880 and the operational flags for lure replacement and insecticide application; the value -1 in the flags means "not recorded"). All outputs in `output/` were generated from the raw workbook; the script reads the workbook when present and otherwise reproduces the analysis from the CSV.
+The raw monitoring workbook was provided by Rasip Agro and is subject to data-ownership restrictions; requests should be addressed to the corresponding author and depend on the owner's permission. The derived dataset above is sufficient to reproduce every result: running the script from the CSV yields the same tables as running it from the workbook.
 
 ## Software
 
-R 4.5.1 with readxl 1.4.5, dplyr 1.2.1, tidyr 1.3.1, purrr 1.1.0, ggplot2 4.0.3, sf 1.0.21, spdep 1.4.2, FSA 0.10.1, writexl 1.5.4 and glmmTMB 1.1.14. The exact environment of each run is written to `output/session_info.txt`.
-
-## Release
-
-The release corresponding to the revised manuscript is tagged `v1.0`.
+R 4.5.1 with readxl 1.4.5, dplyr 1.2.1, tidyr 1.3.1, purrr 1.1.0, ggplot2 4.0.3, sf 1.0.21, spdep 1.4.2, FSA 0.10.1, writexl 1.5.4 and glmmTMB 1.1.14 (`output/session_info.txt`).
 
 ## License
 

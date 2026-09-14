@@ -1,4 +1,4 @@
-Spatial recurrence analysis - 2026-09-14 11:45:24 
+Spatial recurrence analysis - 2026-09-14 16:08:24 
 Master file: data/Final.xlsx 
 
 
@@ -19,7 +19,7 @@ Traps by number of valid readings:
 
 
 ========== 2. Trap-level summaries and spatial weights ==========
-Mean distance to the 4 nearest neighbours (m): mean 229.8, min 119.3, max 424.1
+Mean distance to the 4 nearest neighbors (m): mean 229.8, min 119.3, max 424.1
 
 
 ========== 3. Global Moran's I and LISA - full period ==========
@@ -495,7 +495,7 @@ High-High traps across leave-one-event-out runs (of 7 ) and k = 3..8 (of 6):
 15  N°54    Not significant                   0                        1
 
 
-========== 10. Fixed-distance neighbourhoods ==========
+========== 10. Fixed-distance neighborhoods ==========
   radius_m islands mean_links moran_I_critical   p_critical
 1      250      14       2.34           0.2847 1.778020e-04
 2      300       4       3.45           0.2802 1.023069e-05
@@ -620,7 +620,7 @@ Median FTD change after application: -0.001 | decreases: 18 of 36
 
 ========== 14. Negative-binomial GLMMs (glmmTMB) ==========
 Observations in the GLMMs: 45261 
-M1 fitted in 0.7 min
+M1 fitted in 0.6 min
  Family: nbinom2  ( log )
 Formula:          
 Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +  
