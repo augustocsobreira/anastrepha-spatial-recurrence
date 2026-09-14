@@ -1,0 +1,4 @@
+# Restricted raw monitoring workbook (Rasip Agro) - never commit
+data/Final.xlsx
+Base_doutorado_*.xlsx
+*.zip
