@@ -1,4 +1,4 @@
-Spatial recurrence analysis - 2026-09-14 16:08:24 
+Spatial recurrence analysis - 2026-09-14 18:16:14 
 Master file: data/Final.xlsx 
 
 
@@ -107,6 +107,35 @@ Table S1:
       High-High        Low-High Not significant 
              11               1             119 
 High-High traps (analytical p < 0.05): N°40, N°44, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°68 
+Geometry of the critical-event cluster:
+                                                                                 item
+1                                               High-High traps on the critical dates
+2                                                         longitude, westernmost trap
+3                                                         longitude, easternmost trap
+4                                                         latitude, southernmost trap
+5                                                         latitude, northernmost trap
+6                                                               convex hull area (ha)
+7  distance from the westernmost cluster trap to the western limit of the network (m)
+8                                    nearest High-High neighbor, minimum distance (m)
+9                                    nearest High-High neighbor, maximum distance (m)
+10                                      nearest High-High neighbor, mean distance (m)
+11            mean of the per-trap mean captures on the critical dates, cluster traps
+12              mean of the per-trap mean captures on the critical dates, other traps
+13                                   other traps with a reading on the critical dates
+      value
+1   11.0000
+2  -50.8489
+3  -50.8399
+4  -28.5403
+5  -28.5257
+6   86.7420
+7  171.7787
+8   61.8402
+9  354.2758
+10 206.0805
+11   6.5455
+12   2.6222
+13 120.0000
                                           subset traps moran_I p_analytical
 1  Full period, traps present in all six seasons   121  0.2004 1.951058e-04
 2 Critical events, traps read on all seven dates   121  0.2016 7.406731e-05
@@ -371,6 +400,12 @@ Recorded insecticide applications: 36
 3 FDR (Benjamini-Hochberg) q < 0.05         5               6
 4        Permutation + FDR q < 0.05         1              11
 5               Bonferroni p < 0.05         3               4
+                                                     high_high_ids
+1 N°40, N°44, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°68
+2                                           N°57, N°59, N°63, N°68
+3                                     N°57, N°59, N°62, N°63, N°68
+4                                                             N°59
+5                                                 N°57, N°59, N°63
     trap mean_capture_critical      Ii  quadrant p_analytical p_permutation
 1   N°59                 7.571  3.5873 High-High       0.0000         0.002
 2   N°97                 1.143 -1.0054  Low-High       0.0001         0.016
@@ -430,6 +465,14 @@ LISA, full period, by criterion:
 1               Analytical p < 0.05         7       6              20
 2              Permutation p < 0.05         3      14              21
 3 FDR (Benjamini-Hochberg) q < 0.05         0       0               0
+4        Permutation + FDR q < 0.05         0       0               0
+5               Bonferroni p < 0.05         0       0               0
+                             high_high_ids
+1 N°45, N°56, N°59, N°61, N°62, N°63, N°66
+2                         N°59, N°62, N°63
+3                                         
+4                                         
+5                                         
 High-High traps in the full period and/or in critical events:
    trap    cluster_full q_fdr_full cluster_critical q_fdr_critical
 1  N°56       High-High     0.3273        High-High         0.2846
@@ -519,18 +562,24 @@ High-High traps across leave-one-event-out runs (of 7 ) and k = 3..8 (of 6):
 3           0.4       10     142  0.2424 1.165169e-06         0.001
 4           0.5        7     131  0.2403 1.840002e-06         0.001
 5           0.7        5     131  0.2155 1.299711e-05         0.003
-  high_high_traps class_none class_low class_medium class_high kruskal_chi2
-1              10          3        65           67          7        91.18
-2              10          4        56           73          9        90.80
-3               9          9        29           80         24        77.89
-4              11         11        29           47         44        97.01
-5               9         13        31           61         26        88.96
-     kruskal_p
-1 1.220858e-19
-2 1.475203e-19
-3 8.697181e-17
-4 6.835313e-21
-5 3.657645e-19
+  high_high_traps high_high_in_baseline_cluster
+1              10                             9
+2              10                             9
+3               9                             9
+4              11                            11
+5               9                             9
+                                                     high_high_ids class_none
+1       N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°67, N°68          3
+2       N°45, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°68          4
+3             N°44, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°68          9
+4 N°40, N°44, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°68         11
+5             N°44, N°56, N°57, N°59, N°60, N°61, N°62, N°63, N°68         13
+  class_low class_medium class_high kruskal_chi2    kruskal_p
+1        65           67          7        91.18 1.220858e-19
+2        56           73          9        90.80 1.475203e-19
+3        29           80         24        77.89 8.697181e-17
+4        29           47         44        97.01 6.835313e-21
+5        31           61         26        88.96 3.657645e-19
 
 
 ========== 12. Leave-one-event-out validation of the recurrence classification ==========
@@ -619,8 +668,8 @@ Median FTD change after application: -0.001 | decreases: 18 of 36
 
 
 ========== 14. Negative-binomial GLMMs (glmmTMB) ==========
-Observations in the GLMMs: 45261 
-M1 fitted in 0.6 min
+Observations in the GLMMs: 45120 
+M1 fitted in 1.2 min
  Family: nbinom2  ( log )
 Formula:          
 Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +  
@@ -629,31 +678,31 @@ Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +
 Data: glmm_data
 
       AIC       BIC    logLik -2*log(L)  df.resid 
-  35028.3   35150.4  -17500.1   35000.3     45247 
+  35009.4   35131.5  -17490.7   34981.4     45106 
 
 Random effects:
 
 Conditional model:
  Groups Name        Variance Std.Dev.
- trap   (Intercept) 0.6061   0.7785  
- date   (Intercept) 3.0589   1.7490  
-Number of obs: 45261, groups:  trap, 142; date, 350
+ trap   (Intercept) 0.6086   0.7801  
+ date   (Intercept) 3.0404   1.7437  
+Number of obs: 45120, groups:  trap, 142; date, 349
 
 Dispersion parameter for nbinom2 family (): 0.485 
 
 Conditional model:
                         Estimate Std. Error z value Pr(>|z|)    
-(Intercept)              -4.9501     0.2969 -16.671  < 2e-16 ***
-scale(tmean_C)            0.8670     0.1094   7.923 2.32e-15 ***
-scale(precipitation_mm)  -0.1016     0.1193  -0.851 0.394617    
-scale(humidity_pct)       0.2140     0.1166   1.835 0.066469 .  
-scale(wind_ms)           -0.2750     0.1104  -2.491 0.012727 *  
-insecticide_7d            0.9513     0.2845   3.344 0.000825 ***
-season2020/21             1.4967     0.3748   3.994 6.51e-05 ***
-season2021/22            -0.4476     0.3722  -1.203 0.229123    
-season2022/23             0.8761     0.3679   2.381 0.017262 *  
-season2023/24            -0.3606     0.3899  -0.925 0.354977    
-season2024/25            -0.7143     0.4030  -1.772 0.076332 .  
+(Intercept)              -4.9655     0.2961 -16.771  < 2e-16 ***
+scale(tmean_C)            0.8635     0.1093   7.899 2.81e-15 ***
+scale(precipitation_mm)  -0.1073     0.1194  -0.898 0.368962    
+scale(humidity_pct)       0.2262     0.1165   1.942 0.052116 .  
+scale(wind_ms)           -0.2791     0.1102  -2.533 0.011322 *  
+insecticide_7d            0.9425     0.2843   3.315 0.000915 ***
+season2020/21             1.5114     0.3738   4.043 5.27e-05 ***
+season2021/22            -0.4264     0.3712  -1.149 0.250686    
+season2022/23             0.8960     0.3670   2.442 0.014621 *  
+season2023/24            -0.3464     0.3889  -0.891 0.373012    
+season2024/25            -0.6648     0.4023  -1.652 0.098436 .  
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 M2a: same observations without the recurrence class
@@ -665,31 +714,31 @@ Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +
 Data: glmm_noncritical
 
       AIC       BIC    logLik -2*log(L)  df.resid 
-  30762.5   30884.0  -15367.2   30734.5     43518 
+  30743.8   30865.3  -15357.9   30715.8     43388 
 
 Random effects:
 
 Conditional model:
  Groups Name        Variance Std.Dev.
- trap   (Intercept) 0.5749   0.7582  
- date   (Intercept) 2.8278   1.6816  
-Number of obs: 43532, groups:  trap, 131; date, 343
+ trap   (Intercept) 0.5773   0.7598  
+ date   (Intercept) 2.8046   1.6747  
+Number of obs: 43402, groups:  trap, 131; date, 342
 
 Dispersion parameter for nbinom2 family (): 0.419 
 
 Conditional model:
                         Estimate Std. Error z value Pr(>|z|)    
-(Intercept)              -4.8121     0.2888 -16.664  < 2e-16 ***
-scale(tmean_C)            0.8497     0.1076   7.898 2.84e-15 ***
-scale(precipitation_mm)  -0.1504     0.1179  -1.276 0.201965    
-scale(humidity_pct)       0.3059     0.1140   2.683 0.007306 ** 
-scale(wind_ms)           -0.3797     0.1101  -3.448 0.000564 ***
-insecticide_7d            0.8884     0.2802   3.170 0.001522 ** 
-season2020/21             1.1739     0.3682   3.188 0.001431 ** 
-season2021/22            -0.5233     0.3597  -1.455 0.145736    
-season2022/23             0.4676     0.3649   1.282 0.199958    
-season2023/24            -0.4933     0.3776  -1.306 0.191423    
-season2024/25            -0.7780     0.3908  -1.991 0.046483 *  
+(Intercept)              -4.8266     0.2877 -16.778  < 2e-16 ***
+scale(tmean_C)            0.8459     0.1074   7.877 3.36e-15 ***
+scale(precipitation_mm)  -0.1565     0.1178  -1.329 0.183999    
+scale(humidity_pct)       0.3187     0.1138   2.801 0.005096 ** 
+scale(wind_ms)           -0.3842     0.1098  -3.498 0.000468 ***
+insecticide_7d            0.8794     0.2798   3.143 0.001673 ** 
+season2020/21             1.1868     0.3669   3.235 0.001217 ** 
+season2021/22            -0.5024     0.3584  -1.402 0.160980    
+season2022/23             0.4847     0.3636   1.333 0.182512    
+season2023/24            -0.4800     0.3763  -1.276 0.202019    
+season2024/25            -0.7280     0.3897  -1.868 0.061732 .  
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 M2: recurrence class on non-critical dates
@@ -701,83 +750,83 @@ Capturas ~ recurrence_class + scale(tmean_C) + scale(precipitation_mm) +
 Data: glmm_noncritical
 
       AIC       BIC    logLik -2*log(L)  df.resid 
-  30680.0   30827.6  -15323.0   30646.0     43515 
+  30661.1   30808.6  -15313.5   30627.1     43385 
 
 Random effects:
 
 Conditional model:
  Groups Name        Variance Std.Dev.
- trap   (Intercept) 0.2711   0.5206  
- date   (Intercept) 2.8257   1.6810  
-Number of obs: 43532, groups:  trap, 131; date, 343
+ trap   (Intercept) 0.2717   0.5212  
+ date   (Intercept) 2.8024   1.6740  
+Number of obs: 43402, groups:  trap, 131; date, 342
 
 Dispersion parameter for nbinom2 family (): 0.419 
 
 Conditional model:
                         Estimate Std. Error z value Pr(>|z|)    
-(Intercept)              -5.9388     0.3402 -17.458  < 2e-16 ***
-recurrence_classLow       0.5336     0.2200   2.425 0.015298 *  
-recurrence_classMedium    1.1581     0.2085   5.554 2.80e-08 ***
-recurrence_classHigh      1.7452     0.2089   8.353  < 2e-16 ***
-scale(tmean_C)            0.8496     0.1075   7.900 2.78e-15 ***
-scale(precipitation_mm)  -0.1501     0.1178  -1.274 0.202509    
-scale(humidity_pct)       0.3060     0.1140   2.684 0.007269 ** 
-scale(wind_ms)           -0.3800     0.1101  -3.452 0.000556 ***
-insecticide_7d            0.8876     0.2801   3.169 0.001531 ** 
-season2020/21             1.1730     0.3680   3.187 0.001437 ** 
-season2021/22            -0.5196     0.3596  -1.445 0.148438    
-season2022/23             0.4698     0.3647   1.288 0.197740    
-season2023/24            -0.4897     0.3774  -1.297 0.194495    
-season2024/25            -0.7702     0.3906  -1.972 0.048625 *  
+(Intercept)              -5.9634     0.3394 -17.570  < 2e-16 ***
+recurrence_classLow       0.5445     0.2204   2.471 0.013490 *  
+recurrence_classMedium    1.1691     0.2089   5.596 2.19e-08 ***
+recurrence_classHigh      1.7564     0.2093   8.391  < 2e-16 ***
+scale(tmean_C)            0.8458     0.1073   7.879 3.29e-15 ***
+scale(precipitation_mm)  -0.1564     0.1178  -1.328 0.184312    
+scale(humidity_pct)       0.3188     0.1137   2.803 0.005061 ** 
+scale(wind_ms)           -0.3845     0.1098  -3.502 0.000462 ***
+insecticide_7d            0.8785     0.2797   3.141 0.001683 ** 
+season2020/21             1.1859     0.3667   3.234 0.001223 ** 
+season2021/22            -0.4986     0.3582  -1.392 0.163947    
+season2022/23             0.4869     0.3634   1.340 0.180379    
+season2023/24            -0.4766     0.3761  -1.267 0.205057    
+season2024/25            -0.7199     0.3895  -1.848 0.064554 .  
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
                                                   model n_obs      temperature
-1                                        M1 (reference) 45261 2.38 (1.92–2.95)
-2        M1 without the first inspection of each season 44487 2.27 (1.84–2.78)
-3 M1 + log(1 + mean capture of the previous inspection) 45139 1.87 (1.53–2.28)
-4                                        M2 (reference) 43532 2.34 (1.89–2.89)
-5        M2 without the first inspection of each season 42774 2.23 (1.82–2.73)
-6 M2 + log(1 + mean capture of the previous inspection) 43415 1.89 (1.55–2.30)
+1                                        M1 (reference) 45120 2.37 (1.91–2.94)
+2        M1 without the first inspection of each season 44346 2.26 (1.84–2.77)
+3 M1 + log(1 + mean capture of the previous inspection) 44998 1.86 (1.53–2.27)
+4                                        M2 (reference) 43402 2.33 (1.89–2.88)
+5        M2 without the first inspection of each season 42644 2.22 (1.82–2.72)
+6 M2 + log(1 + mean capture of the previous inspection) 43285 1.89 (1.55–2.29)
               wind         humidity   insecticide_7d   lag_mean_capture
-1 0.76 (0.61–0.94) 1.24 (0.99–1.56) 2.59 (1.48–4.52)                   
-2 0.78 (0.63–0.96) 1.16 (0.94–1.45) 2.25 (1.33–3.83)                   
-3 0.76 (0.63–0.93) 1.18 (0.96–1.45) 1.60 (0.96–2.67) 19.76 (9.56–40.85)
-4 0.68 (0.55–0.85) 1.36 (1.09–1.70) 2.43 (1.40–4.21)                   
-5 0.70 (0.57–0.87) 1.28 (1.03–1.58) 2.12 (1.26–3.57)                   
-6 0.70 (0.58–0.85) 1.28 (1.04–1.56) 1.47 (0.88–2.45) 18.84 (8.93–39.72)
+1 0.76 (0.61–0.94) 1.25 (1.00–1.58) 2.57 (1.47–4.48)                   
+2 0.78 (0.63–0.96) 1.18 (0.95–1.47) 2.23 (1.32–3.80)                   
+3 0.76 (0.62–0.92) 1.19 (0.97–1.46) 1.58 (0.95–2.64) 19.62 (9.51–40.48)
+4 0.68 (0.55–0.84) 1.38 (1.10–1.72) 2.41 (1.39–4.16)                   
+5 0.70 (0.57–0.86) 1.29 (1.05–1.60) 2.10 (1.25–3.54)                   
+6 0.70 (0.58–0.85) 1.29 (1.05–1.58) 1.45 (0.87–2.42) 18.65 (8.87–39.20)
          class_low     class_medium       class_high trap_variance
-1                                                            0.606
-2                                                            0.609
-3                                                            0.606
-4 1.71 (1.11–2.62) 3.18 (2.12–4.79) 5.73 (3.80–8.63)         0.271
-5 1.68 (1.09–2.59) 3.16 (2.10–4.76) 5.70 (3.78–8.59)         0.273
-6 1.70 (1.11–2.62) 3.18 (2.12–4.79) 5.73 (3.80–8.63)         0.271
+1                                                            0.609
+2                                                            0.611
+3                                                            0.609
+4 1.72 (1.12–2.66) 3.22 (2.14–4.85) 5.79 (3.84–8.73)         0.272
+5 1.70 (1.10–2.62) 3.19 (2.12–4.82) 5.76 (3.82–8.70)         0.274
+6 1.72 (1.12–2.65) 3.22 (2.14–4.85) 5.79 (3.84–8.73)         0.272
   date_residual_lag1
-1              0.283
-2              0.282
-3              0.279
-4              0.264
-5              0.266
-6              0.257
+1              0.272
+2              0.271
+3              0.266
+4              0.250
+5              0.252
+6              0.242
   model group variance
-1    M1  trap   0.6061
-2    M1  date   3.0589
-3   M2a  trap   0.5749
-4   M2a  date   2.8278
-5    M2  trap   0.2711
-6    M2  date   2.8257
+1    M1  trap   0.6086
+2    M1  date   3.0404
+3   M2a  trap   0.5773
+4   M2a  date   2.8046
+5    M2  trap   0.2717
+6    M2  date   2.8024
   model n_obs      AIC dispersion_theta
-1    M1 45261 35028.28        0.4850699
-2   M2a 43532 30762.45        0.4189195
-3    M2 43532 30680.01        0.4193853
+1    M1 45120 35009.43        0.4851437
+2   M2a 43402 30743.79        0.4189615
+3    M2 43402 30661.08        0.4194054
   model converged n_obs date_residual_lag1_autocorrelation
-1    M1      TRUE 45261                              0.283
-2   M2a      TRUE 43532                              0.275
-3    M2      TRUE 43532                              0.264
+1    M1      TRUE 45120                              0.272
+2   M2a      TRUE 43402                              0.264
+3    M2      TRUE 43402                              0.250
   trap_residual_moran_I trap_residual_moran_p
-1               -0.1035             0.9635607
-2               -0.0360             0.6905880
-3               -0.0080             0.5018371
+1               -0.1181             0.9807959
+2               -0.0262             0.6275208
+3               -0.0018             0.4586315
 
 
 ========== 15. Figures ==========

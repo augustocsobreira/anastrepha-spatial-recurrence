@@ -21,8 +21,8 @@ attached base packages:
 
 other attached packages:
  [1] glmmTMB_1.1.14 writexl_1.5.4  FSA_0.10.1     spdep_1.4-2    spData_2.3.5  
- [6] sf_1.0-21      ggplot2_4.0.3  purrr_1.1.0    tidyr_1.3.1    dplyr_1.2.1   
-[11] readxl_1.4.5  
+ [6] sf_1.0-21      ggrepel_0.9.8  ggplot2_4.0.3  purrr_1.1.0    tidyr_1.3.1   
+[11] dplyr_1.2.1    readxl_1.4.5  
 
 loaded via a namespace (and not attached):
  [1] gtable_0.3.6        TMB_1.9.25          lattice_0.22-7     

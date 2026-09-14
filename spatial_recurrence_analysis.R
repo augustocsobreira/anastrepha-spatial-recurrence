@@ -55,7 +55,7 @@ if (dir.exists("/content") && (file.exists("/content/Final.xlsx") || file.exists
   config$output_dir  <- "/content/output"
 }
 
-packages <- c("readxl", "dplyr", "tidyr", "purrr", "ggplot2", "sf", "spdep", "FSA", "writexl", "glmmTMB")
+packages <- c("readxl", "dplyr", "tidyr", "purrr", "ggplot2", "ggrepel", "sf", "spdep", "FSA", "writexl", "glmmTMB")
 for (p in packages) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
 suppressPackageStartupMessages(invisible(lapply(packages, library, character.only = TRUE)))
 
@@ -174,6 +174,18 @@ if (file.exists(config$master_file)) {
   cat("Master workbook not found; reading the derived dataset", csv_file, "\n")
   records <- read_long_csv(csv_file)
 } else stop("Neither the master workbook nor data/trap_captures_long.csv was found")
+
+# Exposure interval = days between consecutive inspection dates (dates with at least one valid reading);
+# orchard FTD = total captures / (traps with a valid reading x exposure). Negative climate values are
+# missing-value codes of the workbook and are treated as missing.
+inspections <- records %>% filter(valid_reading == 1) %>% group_by(Data) %>%
+  summarise(n_valid = n(), flies = sum(Capturas), .groups = "drop") %>% arrange(Data) %>%
+  mutate(gap_days = as.integer(Data - lag(Data)))
+records <- records %>% left_join(inspections, by = "Data") %>%
+  mutate(interval_days = ifelse(!is.na(gap_days), gap_days, interval_days),
+         orchard_FTD   = ifelse(!is.na(n_valid), flies / (n_valid * pmax(interval_days, 1)), orchard_FTD)) %>%
+  select(-n_valid, -flies, -gap_days) %>%
+  mutate(across(c(precipitation_mm, tmax_C, tmean_C, tmin_C, humidity_pct, wind_ms), ~ ifelse(.x < 0, NA_real_, .x)))
 obs <- records %>% filter(valid_reading == 1)
 stopifnot(all(table(obs$Armadilha, obs$Data) <= 1))
 cat("Trap-date records:", nrow(records), "| valid readings:", nrow(obs),
@@ -298,6 +310,22 @@ cat("High-High traps (analytical p < 0.05):",
 
 # Sensitivity to unequal sampling histories: traps observed over the whole period / on all seven critical dates
 hh_crit_ids <- intensity_critical$Armadilha[intensity_critical$cluster == "High-High"]
+cl_pts <- st_transform(st_as_sf(intensity_critical %>% filter(Armadilha %in% hh_crit_ids), coords = c("Longitude", "Latitude"), crs = 4326), config$crs_utm)
+cl_xy <- st_coordinates(cl_pts); all_xy <- utm_coords(all_traps)
+nn_cl <- apply(as.matrix(dist(cl_xy)), 1, function(d) min(d[d > 0]))
+in_cl <- intensity_critical$Armadilha %in% hh_crit_ids
+tbl$cluster_geometry <- tibble(
+  item = c("High-High traps on the critical dates", "longitude, westernmost trap", "longitude, easternmost trap", "latitude, southernmost trap",
+           "latitude, northernmost trap", "convex hull area (ha)", "distance from the westernmost cluster trap to the western limit of the network (m)",
+           "nearest High-High neighbor, minimum distance (m)", "nearest High-High neighbor, maximum distance (m)", "nearest High-High neighbor, mean distance (m)",
+           "mean of the per-trap mean captures on the critical dates, cluster traps", "mean of the per-trap mean captures on the critical dates, other traps",
+           "other traps with a reading on the critical dates"),
+  value = c(length(hh_crit_ids), min(intensity_critical$Longitude[in_cl]), max(intensity_critical$Longitude[in_cl]),
+            min(intensity_critical$Latitude[in_cl]), max(intensity_critical$Latitude[in_cl]),
+            as.numeric(st_area(st_convex_hull(st_union(cl_pts)))) / 1e4, min(cl_xy[, 1]) - min(all_xy[, 1]),
+            min(nn_cl), max(nn_cl), mean(nn_cl),
+            mean(intensity_critical$mean_capture_critical[in_cl]), mean(intensity_critical$mean_capture_critical[!in_cl]), sum(!in_cl)))
+cat("Geometry of the critical-event cluster:\n"); print(as.data.frame(tbl$cluster_geometry), digits = 5)
 seasons_per_trap <- obs %>% group_by(Armadilha) %>% summarise(n_seasons = n_distinct(season_label(Data)), .groups = "drop")
 common_full <- trap_summary %>% filter(Armadilha %in% seasons_per_trap$Armadilha[seasons_per_trap$n_seasons == max(seasons_per_trap$n_seasons)])
 common_crit <- intensity_critical %>% filter(n_readings_critical == n_events)
@@ -422,7 +450,9 @@ tbl$lisa_critical_by_criterion <- tibble(
   high_high = c(count_hh(lisa_crit$cluster), count_hh(lisa_crit$cluster_permutation), count_hh(lisa_crit$cluster_fdr),
                 count_hh(lisa_crit$cluster_permutation_fdr), count_hh(lisa_crit$cluster_bonferroni)),
   any_significant = c(count_sig(lisa_crit$cluster), count_sig(lisa_crit$cluster_permutation), count_sig(lisa_crit$cluster_fdr),
-                      count_sig(lisa_crit$cluster_permutation_fdr), count_sig(lisa_crit$cluster_bonferroni)))
+                      count_sig(lisa_crit$cluster_permutation_fdr), count_sig(lisa_crit$cluster_bonferroni)),
+  high_high_ids = vapply(c("cluster", "cluster_permutation", "cluster_fdr", "cluster_permutation_fdr", "cluster_bonferroni"),
+                         function(v) paste(lisa_crit$Armadilha[lisa_crit[[v]] == "High-High"], collapse = ", "), ""))
 print(as.data.frame(tbl$lisa_critical_by_criterion))
 tbl$lisa_critical_traps <- lisa_crit %>%
   filter(cluster != "Not significant" | cluster_permutation != "Not significant") %>%
@@ -433,15 +463,20 @@ print(as.data.frame(tbl$lisa_critical_traps))
 
 lisa_full_perm <- localmoran_perm(trap_summary$mean_capture, w_full, nsim = config$n_permutations)
 lisa_full <- trap_summary %>%
-  mutate(p_permutation = perm_column(lisa_full_perm), q_fdr = p.adjust(p_full, "BH"),
+  mutate(p_permutation = perm_column(lisa_full_perm), q_fdr = p.adjust(p_full, "BH"), p_bonferroni = p.adjust(p_full, "bonferroni"),
+         q_fdr_permutation = p.adjust(p_permutation, "BH"),
          quadrant = as.character(attr(lisa_full_raw, "quadr")$mean),
          cluster_permutation = ifelse(p_permutation < 0.05, quadrant, "Not significant"),
-         cluster_fdr = ifelse(q_fdr < 0.05, quadrant, "Not significant"))
+         cluster_fdr = ifelse(q_fdr < 0.05, quadrant, "Not significant"),
+         cluster_permutation_fdr = ifelse(q_fdr_permutation < 0.05, quadrant, "Not significant"),
+         cluster_bonferroni = ifelse(p_bonferroni < 0.05, quadrant, "Not significant"))
+full_criteria <- c("cluster_full", "cluster_permutation", "cluster_fdr", "cluster_permutation_fdr", "cluster_bonferroni")
 tbl$lisa_full_by_criterion <- tibble(
-  criterion = c("Analytical p < 0.05", "Permutation p < 0.05", "FDR (Benjamini-Hochberg) q < 0.05"),
-  high_high = c(count_hh(lisa_full$cluster_full), count_hh(lisa_full$cluster_permutation), count_hh(lisa_full$cluster_fdr)),
-  low_low = c(sum(lisa_full$cluster_full == "Low-Low"), sum(lisa_full$cluster_permutation == "Low-Low"), sum(lisa_full$cluster_fdr == "Low-Low")),
-  any_significant = c(count_sig(lisa_full$cluster_full), count_sig(lisa_full$cluster_permutation), count_sig(lisa_full$cluster_fdr)))
+  criterion = c("Analytical p < 0.05", "Permutation p < 0.05", "FDR (Benjamini-Hochberg) q < 0.05", "Permutation + FDR q < 0.05", "Bonferroni p < 0.05"),
+  high_high = vapply(full_criteria, function(v) count_hh(lisa_full[[v]]), 1L),
+  low_low = vapply(full_criteria, function(v) sum(lisa_full[[v]] == "Low-Low"), 1L),
+  any_significant = vapply(full_criteria, function(v) count_sig(lisa_full[[v]]), 1L),
+  high_high_ids = vapply(full_criteria, function(v) paste(lisa_full$Armadilha[lisa_full[[v]] == "High-High"], collapse = ", "), ""))
 cat("LISA, full period, by criterion:\n"); print(as.data.frame(tbl$lisa_full_by_criterion))
 
 hh_full <- lisa_full$Armadilha[lisa_full$cluster_full == "High-High"]
@@ -507,12 +542,14 @@ tbl$ftd_threshold_sensitivity <- map_dfr(ftd_thresholds, function(th) {
   r <- intensity_table(obs_th)
   w <- knn_weights(utm_coords(r), config$k_neighbours)
   t <- moran.test(r$mean_capture_critical, w); mc <- moran.mc(r$mean_capture_critical, w, nsim = config$n_permutations)
-  lm <- localmoran(r$mean_capture_critical, w); hh <- sum(lisa_clusters(lm, lm[, 5]) == "High-High")
+  lm <- localmoran(r$mean_capture_critical, w); cl_th <- lisa_clusters(lm, lm[, 5]); hh <- sum(cl_th == "High-High")
+  hh_ids_th <- r$Armadilha[cl_th == "High-High"]
   cl <- recurrence_table(obs_th, length(dates_th), all_traps) %>% mutate(class = classify_recurrence(rel_frequency)) %>%
     left_join(r, by = c("Armadilha", "Latitude", "Longitude")) %>% mutate(mean_capture_critical = replace_na(mean_capture_critical, 0))
   kw <- kruskal.test(mean_capture_critical ~ class, data = cl)
   tibble(ftd_threshold = th, n_events = length(dates_th), n_traps = nrow(r), moran_I = round(unname(t$estimate[1]), 4),
          p_analytical = t$p.value, p_permutation = mc$p.value, high_high_traps = hh,
+         high_high_in_baseline_cluster = sum(hh_ids_th %in% hh_crit_ids), high_high_ids = paste(hh_ids_th, collapse = ", "),
          class_none = sum(cl$class == "None"), class_low = sum(cl$class == "Low"),
          class_medium = sum(cl$class == "Medium"), class_high = sum(cl$class == "High"),
          kruskal_chi2 = round(unname(kw$statistic), 2), kruskal_p = kw$p.value)
@@ -665,49 +702,43 @@ if (config$run_glmm) {
 
 # ---- 15. Figures ------------------------------------------------------------
 section("15. Figures")
-theme_paper <- theme_minimal(base_size = 11)
-lisa_colours <- c("High-High" = "#D55E00", "Low-Low" = "#0072B2", "High-Low" = "#E69F00",
-                  "Low-High" = "#56B4E9", "Not significant" = "grey75")
-class_colours <- c("None" = "grey70", "Low" = "#56B4E9", "Medium" = "#E69F00", "High" = "#D55E00")
-save_fig <- function(p, name, w = 7, h = 6) ggsave(file.path(fig_dir, name), p, width = w, height = h, dpi = 300, bg = "white")
+# Figures 1 to 4 and S1 to S3 of the manuscript (600 dpi)
+theme_paper <- theme_minimal(base_size = 14) + theme(legend.position = "right")
+axis_labels <- labs(x = "Longitude (\u00b0W)", y = "Latitude (\u00b0S)")
+lisa_levels <- c("High-High", "Low-Low", "High-Low", "Low-High", "Not significant")
+lisa_colours <- c("High-High" = "#D55E00", "Low-Low" = "#0072B2", "High-Low" = "#E69F00", "Low-High" = "#F8766D", "Not significant" = "#00BFC4")
+class_colours <- c("Not observed" = "grey40", "None" = "grey65", "Low" = "#56B4E9", "Medium" = "#E69F00", "High" = "#D55E00")
+save_fig <- function(p, name, w = 8, h = 6) ggsave(file.path(fig_dir, name), p, width = w, height = h, dpi = 600, bg = "white")
 
-save_fig(ggplot(trap_summary, aes(Longitude, Latitude, size = mean_capture)) + geom_point(alpha = 0.7) + theme_paper +
-           labs(title = "Mean capture per trap (full period)", size = "Mean capture"), "fig_mean_capture.png")
-save_fig(ggplot(lisa_full, aes(Longitude, Latitude, colour = cluster_full)) + geom_point(size = 2.2) +
-           geom_point(data = filter(lisa_full, cluster_fdr == "High-High"), shape = 21, size = 4, stroke = 1, colour = "black") +
-           scale_colour_manual(values = lisa_colours) + theme_paper +
-           labs(title = "LISA clusters - full period (k = 4, p < 0.05)", subtitle = "Black ring: High-High surviving FDR (q < 0.05)", colour = NULL),
-         "fig_lisa_full_period.png")
-save_fig(ggplot(lisa_crit, aes(Longitude, Latitude, colour = cluster)) + geom_point(size = 2.2) +
-           geom_point(data = filter(lisa_crit, cluster_fdr == "High-High"), shape = 21, size = 4, stroke = 1, colour = "black") +
-           scale_colour_manual(values = lisa_colours) + theme_paper +
-           labs(title = "LISA clusters - critical events (k = 4, p < 0.05)", subtitle = "Black ring: High-High surviving FDR (q < 0.05)", colour = NULL),
-         "fig_lisa_critical_events.png")
-save_fig(ggplot(recurrence, aes(Longitude, Latitude, colour = rel_frequency)) + geom_point(size = 2.2) +
-           scale_colour_gradient(low = "lightblue", high = "red") + theme_paper +
-           labs(title = paste0("Relative frequency of participation in critical events (FTD > ", config$ftd_threshold, ")"), colour = "Frequency"),
-         "fig_recurrence_frequency.png")
-save_fig(ggplot(recurrence, aes(Longitude, Latitude, colour = recurrence_class)) + geom_point(size = 2.2) +
-           scale_colour_manual(values = class_colours) + theme_paper + labs(title = "Recurrence classes", colour = "Class"),
-         "fig_recurrence_classes.png")
-save_fig(ggplot(trap_data, aes(recurrence_class, mean_capture_critical)) + geom_boxplot(outlier.alpha = 0.5) + theme_paper +
-           labs(title = "Mean capture during critical events by recurrence class", x = "Recurrence class", y = "Mean capture during critical events"),
-         "fig_boxplot_classes.png", 6, 5)
-stability <- lisa_crit %>%
-  left_join(hh_loo %>% filter(cluster == "High-High") %>% count(Armadilha = trap, name = "times_high_high"), by = "Armadilha") %>%
-  mutate(times_high_high = replace_na(times_high_high, 0L))
-save_fig(ggplot(stability, aes(Longitude, Latitude, colour = times_high_high)) + geom_point(size = 2.4) +
-           scale_colour_gradient(low = "grey85", high = "#D55E00") + theme_paper +
-           labs(title = "Hotspot stability: times classified High-High when leaving one event out", colour = paste("of", n_events)),
-         "fig_hotspot_stability.png")
-save_fig(ggplot(tbl$distance_bands, aes(radius_m, moran_I_critical)) + geom_line() +
-           geom_point(aes(shape = p_permutation_critical < 0.05), size = 3) + geom_hline(yintercept = 0, linetype = 2) + theme_paper +
-           labs(title = "Global Moran's I (critical events) by fixed-distance neighborhood", x = "Radius (m)", y = "Moran's I", shape = "Permutation p < 0.05"),
-         "fig_moran_distance_bands.png", 7, 4.5)
-save_fig(ggplot(tbl$loo_validation, aes(factor(held_out_event), spearman_rho, fill = kruskal_p < 0.05)) + geom_col() + theme_paper +
-           labs(title = "Leave-one-event-out: recurrence (remaining events) vs capture in held-out event", x = "Held-out event",
-                y = "Spearman rho", fill = "Kruskal-Wallis p < 0.05") + theme(axis.text.x = element_text(angle = 45, hjust = 1)),
-         "fig_loo_validation.png", 7, 4.5)
+save_fig(ggplot(trap_summary, aes(Longitude, Latitude, size = mean_capture)) + geom_point(alpha = 0.7, colour = "#00BFC4") +
+           theme_paper + axis_labels + labs(size = "Mean capture"), "Figure 1.png")
+fig2 <- lisa_full %>% mutate(cl = factor(cluster_full, levels = lisa_levels))
+save_fig(ggplot(fig2, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 3) +
+           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 2.png")
+fig3 <- lisa_crit %>% mutate(cl = factor(cluster, levels = lisa_levels), fdr = cluster_fdr == "High-High")
+save_fig(ggplot(fig3, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 3) +
+           geom_point(data = filter(fig3, fdr), shape = 21, size = 5.5, stroke = 1.1, colour = "black", fill = NA) +
+           ggrepel::geom_text_repel(data = filter(fig3, cluster == "High-High"), aes(label = sub("N\u00b0", "", Armadilha)), colour = "black", size = 3,
+                                    min.segment.length = 0, segment.size = 0.3, box.padding = 0.45, point.padding = 0.25, max.overlaps = Inf, seed = 1, show.legend = FALSE) +
+           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 3.png")
+fig4 <- all_traps %>% left_join(recurrence %>% select(Armadilha, recurrence_class), by = "Armadilha") %>%
+  mutate(cl = factor(ifelse(is.na(recurrence_class), "Not observed", as.character(recurrence_class)), levels = names(class_colours)))
+save_fig(ggplot(fig4, aes(Longitude, Latitude, colour = cl, shape = cl)) + geom_point(size = 3) +
+           scale_colour_manual(values = class_colours) + scale_shape_manual(values = c("Not observed" = 4, "None" = 16, "Low" = 16, "Medium" = 16, "High" = 16)) +
+           theme_paper + axis_labels + labs(colour = "Recurrence class", shape = "Recurrence class"), "Figure 4.png")
+figS1 <- lisa_crit %>% left_join(hh_loo %>% filter(cluster == "High-High") %>% count(Armadilha = trap, name = "n_loo"), by = "Armadilha") %>%
+  mutate(n_loo = replace_na(n_loo, 0L))
+save_fig(ggplot(figS1, aes(Longitude, Latitude, colour = n_loo)) + geom_point(size = 3) +
+           scale_colour_gradient(low = "grey85", high = "#D55E00", breaks = 0:n_events) + theme_paper + axis_labels +
+           labs(colour = paste0("High-High\n(of ", n_events, " runs)")), "Figure S1.png")
+figS2 <- tbl$loo_validation %>% mutate(event = factor(format(held_out_event, "%d %b %Y"), levels = format(sort(held_out_event), "%d %b %Y")))
+save_fig(ggplot(figS2, aes(event, spearman_rho)) + geom_col(fill = "#0072B2", width = 0.6) + geom_hline(yintercept = 0) + theme_paper +
+           labs(x = "Held-out critical event", y = "Spearman's rho") + theme(axis.text.x = element_text(angle = 30, hjust = 1)), "Figure S2.png")
+figS3 <- tbl$lisa_by_season %>% mutate(cl = factor(cluster, levels = lisa_levels))
+save_fig(ggplot(figS3, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 1.8) +
+           geom_point(data = filter(figS3, in_critical_cluster), shape = 21, size = 3.2, stroke = 0.8, colour = "black", fill = NA) +
+           scale_colour_manual(values = lisa_colours, drop = TRUE) + facet_wrap(~ season, ncol = 3) + theme_minimal(base_size = 12) +
+           theme(legend.position = "bottom", axis.text = element_text(size = 7)) + axis_labels + labs(colour = "Cluster type"), "Figure S3.png")
 
 # ---- 16. Export -------------------------------------------------------------
 section("16. Export")
