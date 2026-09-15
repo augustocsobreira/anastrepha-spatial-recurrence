@@ -152,7 +152,7 @@ build_long_table <- function(master_file) {
               total_capture_sheet = `Total de capturas`,
               precipitation_mm = `Precipitação (mm)`, tmax_C = `Tmax (°C)`, tmean_C = `Tmed (°C)`, tmin_C = `Tmin (°C)`,
               humidity_pct = `Umidade média (%)`, wind_ms = `Vento (m/s)`,
-              lure_change = `Troca de atrativos`, insecticide = `Aplicação de inseticida`) %>%
+              lure_change = ifelse(`Troca de atrativos` == 1, 1L, -1L), insecticide = ifelse(`Aplicação de inseticida` %in% c(1, 2), 1L, -1L)) %>%   # 1 = recorded, -1 = not recorded
     arrange(Data, Armadilha)
   stopifnot(!any(is.na(long$Latitude)))                  # every trap has coordinates
   cat("Master sheet:", nrow(wide), "monitoring dates x", length(trap_cols), "traps\n")
@@ -397,7 +397,7 @@ date_level <- records %>% group_by(Data) %>%
             total_capture_sheet = first(total_capture_sheet), insecticide = first(insecticide),
             interval_days = first(interval_days), .groups = "drop") %>% arrange(Data) %>%
   mutate(has_reading = valid_traps_sheet > 0 & total_capture_sheet >= 0)   # -1 in the sheet = no inspection on that date
-application_dates <- date_level %>% filter(insecticide %in% c(1, 2)) %>% pull(Data)
+application_dates <- date_level %>% filter(insecticide == 1) %>% pull(Data)
 cat("Recorded insecticide applications:", length(application_dates), "\n")
 
 tbl$critical_events <- obs_critical %>% group_by(date = Data) %>%

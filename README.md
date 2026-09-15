@@ -50,7 +50,7 @@ Missing packages are installed automatically. The mixed models (section 14) take
 | `valid_traps`, `total_capture` | Number of traps read and total flies on the date |
 | `precipitation_mm`, `tmax_C`, `tmean_C`, `tmin_C`, `humidity_pct`, `wind_ms` | Daily records of INMET station A880; `-1` = not recorded (treated as missing by the script) |
 | `lure_replacement` | 1 = attractant replaced on the date; -1 = not recorded |
-| `insecticide_application` | 1 or 2 = application recorded on the date (codes of the spray log); -1 = none recorded |
+| `insecticide_application` | 1 = application recorded on the date; -1 = none recorded |
 
 ## What the script does
 

@@ -1,4 +1,4 @@
-Spatial recurrence analysis - 2026-09-14 18:16:14 
+Spatial recurrence analysis - 2026-09-15 13:31:44 
 Master file: data/Final.xlsx 
 
 
@@ -338,7 +338,7 @@ Recorded insecticide applications: 36
 24 2024-12-17 2024/25             1            FALSE          NA
 25 2024-12-26 2024/25             1             TRUE       0.005
 26 2025-01-03 2024/25             1            FALSE          NA
-27 2025-01-06 2024/25             2             TRUE       0.027
+27 2025-01-06 2024/25             1             TRUE       0.027
 28 2025-01-15 2024/25             1            FALSE          NA
 29 2025-01-21 2024/25             1            FALSE          NA
 30 2025-01-24 2024/25             1            FALSE          NA
@@ -669,7 +669,7 @@ Median FTD change after application: -0.001 | decreases: 18 of 36
 
 ========== 14. Negative-binomial GLMMs (glmmTMB) ==========
 Observations in the GLMMs: 45120 
-M1 fitted in 1.2 min
+M1 fitted in 0.9 min
  Family: nbinom2  ( log )
 Formula:          
 Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +  
