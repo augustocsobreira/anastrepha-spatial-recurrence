@@ -621,7 +621,7 @@ if (config$run_glmm) {
     mutate(season = factor(season_label(Data)), trap = factor(Armadilha), date = factor(Data),
            days_since_application = days_since(Data, application_dates),
            insecticide_7d = as.integer(Data %in% application_dates | (!is.na(days_since_application) & days_since_application <= 7)),
-           critical = as.integer(Data %in% critical_dates), exposure = pmax(interval_days, 1)) %>%
+           critical = as.integer(Data %in% critical_dates), exposure = pmax(interval_days, 1)) %>%   # first inspection of the series: 1 day
     left_join(recurrence %>% select(Armadilha, recurrence_class), by = "Armadilha") %>%
     filter(!is.na(tmean_C), !is.na(precipitation_mm), !is.na(humidity_pct), !is.na(wind_ms))
   cat("Observations in the GLMMs:", nrow(glmm_data), "\n")

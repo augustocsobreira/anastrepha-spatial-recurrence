@@ -36,15 +36,15 @@ Missing packages are installed automatically. The mixed models (section 14) take
 
 ## Dataset
 
-`data/trap_captures_long.csv` has 53,250 rows (142 traps x 375 monitoring dates, 17 Oct 2019 to 24 Apr 2025) and the columns:
+`data/trap_captures_long.csv` has 53,250 rows (142 traps x 375 recorded dates, 17 Oct 2019 to 24 Apr 2025; 350 of the dates are trap inspections and 25 are insecticide applications recorded without an inspection) and the columns:
 
 | Column | Content |
 |---|---|
 | `date` | Inspection date |
 | `trap` | Trap identifier (`N°1` to `N°146`; numbers 93 to 96 do not exist) |
 | `latitude`, `longitude` | Trap coordinates (WGS 84); projected by the script to SIRGAS 2000 / UTM 22S (EPSG:31982) |
-| `capture` | Number of *A. fraterculus* captured; `-1` = no reading on that date |
-| `valid_reading` | 1 if `capture` is a valid reading, 0 otherwise |
+| `capture` | Number of *A. fraterculus* captured; empty (NA) when the trap was not read on that date |
+| `valid_reading` | 1 if `capture` is a valid reading, 0 otherwise (7,989 rows) |
 | `exposure_days` | Interval in days recorded in the workbook; the script recomputes the exposure as the number of days between consecutive inspection dates (they differ only on 30 Mar 2020) |
 | `orchard_FTD` | Orchard-level flies per trap per day recorded in the workbook; the script recomputes it from the readings (identical on all critical dates) |
 | `valid_traps`, `total_capture` | Number of traps read and total flies on the date |
