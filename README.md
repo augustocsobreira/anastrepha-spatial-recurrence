@@ -6,11 +6,12 @@ Analysis code and derived dataset for the manuscript *Spatial Structure and Recu
 
 | File | Purpose |
 |---|---|
-| `spatial_recurrence_analysis.R` | Single script that runs the complete analysis and writes every table and figure |
+| `spatial_recurrence_analysis.R` | Single script that runs the complete analysis and writes every table and every analytical figure |
 | `spatial_recurrence_analysis.ipynb` | The same script as a Google Colab notebook |
 | `data/trap_captures_long.csv` | Derived, de-identified trap-level dataset (one row per trap and inspection date) |
+| `data/study_area_map.png` | Study-area map (Figure 1), produced in QGIS |
 | `output/tables.xlsx` | All tables, one sheet each |
-| `output/figures/` | Figures 1 to 4 and S1 to S3 of the manuscript (600 dpi) |
+| `output/figures/` | Figures 1 to 5 and S1 to S3 of the manuscript (600 dpi); Figure 1 is a copy of the QGIS map |
 | `output/analysis_log.txt` | Console log of the run that produced `output/` |
 | `output/session_info.txt` | R and package versions of that run |
 
@@ -69,7 +70,7 @@ Missing packages are installed automatically. The mixed models (section 14) take
 | 12 | Leave-one-event-out validation: classes defined on n - 1 events and tested on the held-out event | `loo_validation`, `loo_pooled_by_class` |
 | 13 | Orchard FTD around insecticide applications | `ftd_by_application_window`, `ftd_before_after_application` |
 | 14 | Negative-binomial GLMMs (glmmTMB) with random intercepts for trap and date, residual diagnostics and sensitivity analyses | `glmm_coefficients`, `glmm_random_effects`, `glmm_fit`, `glmm_diagnostics`, `glmm_sensitivity` |
-| 15 | Figures 1 to 4 and S1 to S3 of the manuscript | `output/figures/` |
+| 15 | Figures 2 to 5 and S1 to S3 of the manuscript (Figure 1 copied from `data/`) | `output/figures/` |
 | 16 | Per-trap table joining all results | `per_trap` |
 
 ## Data availability

@@ -702,7 +702,9 @@ if (config$run_glmm) {
 
 # ---- 15. Figures ------------------------------------------------------------
 section("15. Figures")
-# Figures 1 to 4 and S1 to S3 of the manuscript (600 dpi)
+# Figures 1 to 5 and S1 to S3 of the manuscript (600 dpi). Figure 1 is the study-area map produced in QGIS
+# (data/study_area_map.png); it is copied, not generated.
+stopifnot(file.copy("data/study_area_map.png", file.path(fig_dir, "Figure 1.png"), overwrite = TRUE))
 theme_paper <- theme_minimal(base_size = 14) + theme(legend.position = "right")
 axis_labels <- labs(x = "Longitude (\u00b0W)", y = "Latitude (\u00b0S)")
 lisa_levels <- c("High-High", "Low-Low", "High-Low", "Low-High", "Not significant")
@@ -711,21 +713,21 @@ class_colours <- c("Not observed" = "grey40", "None" = "grey65", "Low" = "#56B4E
 save_fig <- function(p, name, w = 8, h = 6) ggsave(file.path(fig_dir, name), p, width = w, height = h, dpi = 600, bg = "white")
 
 save_fig(ggplot(trap_summary, aes(Longitude, Latitude, size = mean_capture)) + geom_point(alpha = 0.7, colour = "#00BFC4") +
-           theme_paper + axis_labels + labs(size = "Mean capture"), "Figure 1.png")
+           theme_paper + axis_labels + labs(size = "Mean capture"), "Figure 2.png")
 fig2 <- lisa_full %>% mutate(cl = factor(cluster_full, levels = lisa_levels))
 save_fig(ggplot(fig2, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 3) +
-           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 2.png")
+           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 3.png")
 fig3 <- lisa_crit %>% mutate(cl = factor(cluster, levels = lisa_levels), fdr = cluster_fdr == "High-High")
 save_fig(ggplot(fig3, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 3) +
            geom_point(data = filter(fig3, fdr), shape = 21, size = 5.5, stroke = 1.1, colour = "black", fill = NA) +
            ggrepel::geom_text_repel(data = filter(fig3, cluster == "High-High"), aes(label = sub("N\u00b0", "", Armadilha)), colour = "black", size = 3,
                                     min.segment.length = 0, segment.size = 0.3, box.padding = 0.45, point.padding = 0.25, max.overlaps = Inf, seed = 1, show.legend = FALSE) +
-           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 3.png")
+           scale_colour_manual(values = lisa_colours, drop = TRUE) + theme_paper + axis_labels + labs(colour = "Cluster Type"), "Figure 4.png")
 fig4 <- all_traps %>% left_join(recurrence %>% select(Armadilha, recurrence_class), by = "Armadilha") %>%
   mutate(cl = factor(ifelse(is.na(recurrence_class), "Not observed", as.character(recurrence_class)), levels = names(class_colours)))
 save_fig(ggplot(fig4, aes(Longitude, Latitude, colour = cl, shape = cl)) + geom_point(size = 3) +
            scale_colour_manual(values = class_colours) + scale_shape_manual(values = c("Not observed" = 4, "None" = 16, "Low" = 16, "Medium" = 16, "High" = 16)) +
-           theme_paper + axis_labels + labs(colour = "Recurrence class", shape = "Recurrence class"), "Figure 4.png")
+           theme_paper + axis_labels + labs(colour = "Recurrence class", shape = "Recurrence class"), "Figure 5.png")
 figS1 <- lisa_crit %>% left_join(hh_loo %>% filter(cluster == "High-High") %>% count(Armadilha = trap, name = "n_loo"), by = "Armadilha") %>%
   mutate(n_loo = replace_na(n_loo, 0L))
 save_fig(ggplot(figS1, aes(Longitude, Latitude, colour = n_loo)) + geom_point(size = 3) +

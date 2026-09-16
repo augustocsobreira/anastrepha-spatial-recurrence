@@ -1,4 +1,4 @@
-Spatial recurrence analysis - 2026-09-15 13:31:44 
+Spatial recurrence analysis - 2026-09-16 07:07:10 
 Master file: data/Final.xlsx 
 
 
@@ -669,7 +669,7 @@ Median FTD change after application: -0.001 | decreases: 18 of 36
 
 ========== 14. Negative-binomial GLMMs (glmmTMB) ==========
 Observations in the GLMMs: 45120 
-M1 fitted in 0.9 min
+M1 fitted in 0.8 min
  Family: nbinom2  ( log )
 Formula:          
 Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +  
