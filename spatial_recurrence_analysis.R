@@ -167,6 +167,7 @@ read_long_csv <- function(csv) {
              tmax_C = d$tmax_C, tmean_C = d$tmean_C, tmin_C = d$tmin_C, humidity_pct = d$humidity_pct, wind_ms = d$wind_ms,
              lure_change = d$lure_replacement, insecticide = d$insecticide_application, stringsAsFactors = FALSE)
 }
+id_sort <- function(v) v[order(as.integer(gsub("[^0-9]", "", v)))]   # numeric order of trap identifiers (N°7 before N°10)
 csv_file <- file.path(dirname(config$master_file), "trap_captures_long.csv")
 if (file.exists(config$master_file)) {
   records <- build_long_table(config$master_file)
@@ -235,7 +236,7 @@ lm_nc <- localmoran(noncrit_summary$mean_capture, w_nc)
 noncrit_summary$cluster <- lisa_clusters(lm_nc, lm_nc[, 5])
 noncrit_summary$cluster_fdr <- ifelse(p.adjust(lm_nc[, 5], "BH") < 0.05, as.character(attr(lm_nc, "quadr")$mean), "Not significant")
 noncrit_hh <- noncrit_summary$Armadilha[noncrit_summary$cluster == "High-High"]
-cat("Non-critical High-High traps (analytical p < 0.05):", paste(noncrit_hh, collapse = ", "),
+cat("Non-critical High-High traps (analytical p < 0.05):", paste(id_sort(noncrit_hh), collapse = ", "),
     "| surviving FDR:", sum(noncrit_summary$cluster_fdr == "High-High"), "\n")
 cat("Non-critical dates only:", n_distinct(obs$Data) - length(critical_dates_pre), "dates,", nrow(noncrit_summary), "traps; Moran I =",
     round(moran_noncrit$estimate[1], 4), "analytical p =", signif(moran_noncrit$p.value, 3), "permutation p =", mc_noncrit$p.value, "\n")
@@ -306,7 +307,7 @@ intensity_critical <- intensity_critical %>%
          cluster = lisa_clusters(lisa_crit_raw, p_analytical))
 print(table(intensity_critical$cluster))
 cat("High-High traps (analytical p < 0.05):",
-    paste(intensity_critical$Armadilha[intensity_critical$cluster == "High-High"], collapse = ", "), "\n")
+    paste(id_sort(intensity_critical$Armadilha[intensity_critical$cluster == "High-High"]), collapse = ", "), "\n")
 
 # Sensitivity to unequal sampling histories: traps observed over the whole period / on all seven critical dates
 hh_crit_ids <- intensity_critical$Armadilha[intensity_critical$cluster == "High-High"]
@@ -339,7 +340,7 @@ tbl$moran_common_sets <- bind_rows(
 print(as.data.frame(tbl$moran_common_sets))
 season_overlap <- vapply(names(season_lisa), function(s) sum(season_lisa[[s]]$Armadilha[season_lisa[[s]]$cluster == "High-High"] %in% hh_crit_ids), 1L)
 tbl$moran_by_season$high_high_in_critical_cluster <- c(season_overlap[tbl$moran_by_season$season[seq_along(season_overlap)]], sum(noncrit_hh %in% hh_crit_ids))
-tbl$moran_by_season$high_high_traps_ids <- c(vapply(names(season_lisa), function(s) paste(season_lisa[[s]]$Armadilha[season_lisa[[s]]$cluster == "High-High"], collapse = ", "), ""), paste(noncrit_hh, collapse = ", "))
+tbl$moran_by_season$high_high_traps_ids <- c(vapply(names(season_lisa), function(s) paste(id_sort(season_lisa[[s]]$Armadilha[season_lisa[[s]]$cluster == "High-High"]), collapse = ", "), ""), paste(id_sort(noncrit_hh), collapse = ", "))
 tbl$lisa_by_season <- bind_rows(season_lisa) %>% select(season, trap = Armadilha, Latitude, Longitude, mean_capture, cluster) %>% mutate(in_critical_cluster = trap %in% hh_crit_ids)
 cat("Seasonal High-High traps inside the critical-event cluster:\n"); print(as.data.frame(tbl$moran_by_season %>% select(season, high_high_traps, high_high_in_critical_cluster, high_high_traps_ids)))
 
@@ -452,7 +453,7 @@ tbl$lisa_critical_by_criterion <- tibble(
   any_significant = c(count_sig(lisa_crit$cluster), count_sig(lisa_crit$cluster_permutation), count_sig(lisa_crit$cluster_fdr),
                       count_sig(lisa_crit$cluster_permutation_fdr), count_sig(lisa_crit$cluster_bonferroni)),
   high_high_ids = vapply(c("cluster", "cluster_permutation", "cluster_fdr", "cluster_permutation_fdr", "cluster_bonferroni"),
-                         function(v) paste(lisa_crit$Armadilha[lisa_crit[[v]] == "High-High"], collapse = ", "), ""))
+                         function(v) paste(id_sort(lisa_crit$Armadilha[lisa_crit[[v]] == "High-High"]), collapse = ", "), ""))
 print(as.data.frame(tbl$lisa_critical_by_criterion))
 tbl$lisa_critical_traps <- lisa_crit %>%
   filter(cluster != "Not significant" | cluster_permutation != "Not significant") %>%
@@ -476,7 +477,7 @@ tbl$lisa_full_by_criterion <- tibble(
   high_high = vapply(full_criteria, function(v) count_hh(lisa_full[[v]]), 1L),
   low_low = vapply(full_criteria, function(v) sum(lisa_full[[v]] == "Low-Low"), 1L),
   any_significant = vapply(full_criteria, function(v) count_sig(lisa_full[[v]]), 1L),
-  high_high_ids = vapply(full_criteria, function(v) paste(lisa_full$Armadilha[lisa_full[[v]] == "High-High"], collapse = ", "), ""))
+  high_high_ids = vapply(full_criteria, function(v) paste(id_sort(lisa_full$Armadilha[lisa_full[[v]] == "High-High"]), collapse = ", "), ""))
 cat("LISA, full period, by criterion:\n"); print(as.data.frame(tbl$lisa_full_by_criterion))
 
 hh_full <- lisa_full$Armadilha[lisa_full$cluster_full == "High-High"]
@@ -549,7 +550,7 @@ tbl$ftd_threshold_sensitivity <- map_dfr(ftd_thresholds, function(th) {
   kw <- kruskal.test(mean_capture_critical ~ class, data = cl)
   tibble(ftd_threshold = th, n_events = length(dates_th), n_traps = nrow(r), moran_I = round(unname(t$estimate[1]), 4),
          p_analytical = t$p.value, p_permutation = mc$p.value, high_high_traps = hh,
-         high_high_in_baseline_cluster = sum(hh_ids_th %in% hh_crit_ids), high_high_ids = paste(hh_ids_th, collapse = ", "),
+         high_high_in_baseline_cluster = sum(hh_ids_th %in% hh_crit_ids), high_high_ids = paste(id_sort(hh_ids_th), collapse = ", "),
          class_none = sum(cl$class == "None"), class_low = sum(cl$class == "Low"),
          class_medium = sum(cl$class == "Medium"), class_high = sum(cl$class == "High"),
          kruskal_chi2 = round(unname(kw$statistic), 2), kruskal_p = kw$p.value)
@@ -706,7 +707,7 @@ section("15. Figures")
 # (data/study_area_map.png); it is copied, not generated.
 if (file.exists("data/study_area_map.png")) stopifnot(file.copy("data/study_area_map.png", file.path(fig_dir, "Figure 1.png"), overwrite = TRUE))
 theme_paper <- theme_minimal(base_size = 14) + theme(legend.position = "right")
-axis_labels <- labs(x = "Longitude (\u00b0W)", y = "Latitude (\u00b0S)")
+axis_labels <- labs(x = "Longitude (\u00b0)", y = "Latitude (\u00b0)")
 lisa_levels <- c("High-High", "Low-Low", "High-Low", "Low-High", "Not significant")
 lisa_colours <- c("High-High" = "#D55E00", "Low-Low" = "#0072B2", "High-Low" = "#E69F00", "Low-High" = "#F8766D", "Not significant" = "#00BFC4")
 class_colours <- c("Not observed" = "grey40", "None" = "grey65", "Low" = "#56B4E9", "Medium" = "#E69F00", "High" = "#D55E00")

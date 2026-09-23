@@ -1,4 +1,4 @@
-Spatial recurrence analysis - 2026-09-16 07:07:10 
+Spatial recurrence analysis - 2026-09-23 10:59:49 
 Master file: data/Final.xlsx 
 
 
@@ -41,7 +41,7 @@ Moran I statistic       Expectation          Variance
 
 
 ========== 3b. Global Moran's I on non-critical dates and by season ==========
-Non-critical High-High traps (analytical p < 0.05): N°10, N°45, N°63, N°64, N°7, N°9 | surviving FDR: 0 
+Non-critical High-High traps (analytical p < 0.05): N°7, N°9, N°10, N°45, N°63, N°64 | surviving FDR: 0 
 Non-critical dates only: 343 dates, 142 traps; Moran I = 0.2405 analytical p = 2.97e-06 permutation p = 0.001 
 Share of all flies captured on the critical dates: 25.6 %
                   season dates traps critical_events total_flies moran_I
@@ -153,12 +153,12 @@ Seasonal High-High traps inside the critical-event cluster:
 7 All non-critical dates               6                             1
                                    high_high_traps_ids
 1             N°36, N°38, N°39, N°41, N°42, N°43, N°44
-2                                            N°44, N°7
-3  N°12, N°45, N°51, N°63, N°65, N°69, N°7, N°79, N°82
+2                                            N°7, N°44
+3  N°7, N°12, N°45, N°51, N°63, N°65, N°69, N°79, N°82
 4 N°57, N°59, N°60, N°61, N°62, N°63, N°66, N°68, N°71
-5                          N°61, N°62, N°65, N°7, N°92
-6  N°106, N°108, N°127, N°128, N°136, N°49, N°52, N°55
-7                     N°10, N°45, N°63, N°64, N°7, N°9
+5                          N°7, N°61, N°62, N°65, N°92
+6  N°49, N°52, N°55, N°106, N°108, N°127, N°128, N°136
+7                     N°7, N°9, N°10, N°45, N°63, N°64
 
 
 ========== 5b. Capture intensity by recurrence class - baseline ==========
@@ -669,7 +669,7 @@ Median FTD change after application: -0.001 | decreases: 18 of 36
 
 ========== 14. Negative-binomial GLMMs (glmmTMB) ==========
 Observations in the GLMMs: 45120 
-M1 fitted in 0.8 min
+M1 fitted in 1.2 min
  Family: nbinom2  ( log )
 Formula:          
 Capturas ~ scale(tmean_C) + scale(precipitation_mm) + scale(humidity_pct) +  
