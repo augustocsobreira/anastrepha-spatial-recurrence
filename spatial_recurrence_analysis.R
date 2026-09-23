@@ -22,7 +22,7 @@
 #    2  Trap-level summaries and spatial weights
 #    3  Global Moran's I and local indicators (LISA), full period
 #    4  Critical events, recurrence classes and capture intensity
-#    5  Global Moran's I and LISA, critical events (Table S1, hotspot)
+#    5  Global Moran's I and LISA, critical events (Table S2, hotspot)
 #    6  Threshold scenarios for the recurrence classes (Tables S2 to S7)
 #    7  Critical events and insecticide applications
 #    8  Permutation inference and multiple-testing correction
@@ -296,10 +296,10 @@ x_crit <- intensity_critical$mean_capture_critical
 moran_crit <- moran.test(x_crit, w_crit)
 print(moran_crit)
 
-# Table S1: sensitivity of the global index to the number of neighbors
-tbl$S1_moran_by_k <- map_dfr(3:8, function(k) moran_row(x_crit, knn_weights(crit_coords, k), paste0("k = ", k))) %>%
+# Table S2: sensitivity of the global index to the number of neighbors
+tbl$S2_moran_by_k <- map_dfr(3:8, function(k) moran_row(x_crit, knn_weights(crit_coords, k), paste0("k = ", k))) %>%
   mutate(across(c(moran_I, expected, variance, z), ~ round(.x, 4)))
-cat("Table S1:\n"); print(as.data.frame(tbl$S1_moran_by_k))
+cat("Table S2:\n"); print(as.data.frame(tbl$S2_moran_by_k))
 
 lisa_crit_raw <- localmoran(x_crit, w_crit)
 intensity_critical <- intensity_critical %>%
@@ -368,27 +368,27 @@ scenario_data <- scenarios %>%
   mutate(data = map2(high_threshold, medium_threshold,
                      ~ trap_data %>% mutate(recurrence_class = classify_recurrence(rel_frequency, .x, .y))))
 
-tbl$S2_class_distribution <- scenario_data %>%
+tbl$S4_class_distribution <- scenario_data %>%
   mutate(d = map(data, ~ as.data.frame(table(.x$recurrence_class)) %>% pivot_wider(names_from = Var1, values_from = Freq))) %>%
   select(scenario, d) %>% unnest(d)
-print(as.data.frame(tbl$S2_class_distribution))
+print(as.data.frame(tbl$S4_class_distribution))
 
-tbl$S3_kruskal_by_scenario <- scenario_data %>%
+tbl$S5_kruskal_by_scenario <- scenario_data %>%
   mutate(kw = map(data, ~ kruskal.test(mean_capture_critical ~ recurrence_class, data = .x)),
          kruskal_wallis_chi2 = round(map_dbl(kw, ~ unname(.x$statistic)), 2),
          df = map_dbl(kw, ~ unname(.x$parameter)), p_value = map_dbl(kw, ~ .x$p.value)) %>%
   select(scenario, description, high_threshold, medium_threshold, kruskal_wallis_chi2, df, p_value)
-print(as.data.frame(tbl$S3_kruskal_by_scenario))
+print(as.data.frame(tbl$S5_kruskal_by_scenario))
 
 dunn_by_scenario <- scenario_data %>%
   mutate(dunn = map(data, ~ dunnTest(mean_capture_critical ~ recurrence_class, data = .x, method = "bonferroni")$res)) %>%
   select(scenario, dunn) %>% unnest(dunn) %>%
   transmute(scenario, comparison = Comparison, Z = round(Z, 4), p_unadjusted = P.unadj,
             p_adjusted = P.adj, p_adjusted_text = format_p(P.adj))
-tbl$S4_dunn_S1_and_S4 <- dunn_by_scenario %>% filter(scenario == "S1 - Baseline")
-tbl$S5_dunn_S2 <- dunn_by_scenario %>% filter(scenario == "S2 - More conservative")
-tbl$S6_dunn_S3 <- dunn_by_scenario %>% filter(scenario == "S3 - Less conservative")
-tbl$S7_dunn_S5 <- dunn_by_scenario %>% filter(scenario == "S5 - Moderate (higher high threshold)")
+tbl$S6_dunn_S1_and_S4 <- dunn_by_scenario %>% filter(scenario == "S1 - Baseline")
+tbl$S7_dunn_S2 <- dunn_by_scenario %>% filter(scenario == "S2 - More conservative")
+tbl$S8_dunn_S3 <- dunn_by_scenario %>% filter(scenario == "S3 - Less conservative")
+tbl$S9_dunn_S5 <- dunn_by_scenario %>% filter(scenario == "S5 - Moderate (higher high threshold)")
 cat("Dunn's test, all scenarios:\n"); print(as.data.frame(dunn_by_scenario %>% select(-p_adjusted)))
 
 # ---- 7. Critical events and insecticide applications ------------------------
@@ -733,15 +733,15 @@ figS1 <- lisa_crit %>% left_join(hh_loo %>% filter(cluster == "High-High") %>% c
   mutate(n_loo = replace_na(n_loo, 0L))
 save_fig(ggplot(figS1, aes(Longitude, Latitude, colour = n_loo)) + geom_point(size = 3) +
            scale_colour_gradient(low = "grey85", high = "#D55E00", breaks = 0:n_events) + theme_paper + axis_labels +
-           labs(colour = paste0("High-High\n(of ", n_events, " runs)")), "Figure S1.png")
+           labs(colour = paste0("High-High\n(of ", n_events, " runs)")), "Figure S2.png")
 figS2 <- tbl$loo_validation %>% mutate(event = factor(format(held_out_event, "%d %b %Y"), levels = format(sort(held_out_event), "%d %b %Y")))
 save_fig(ggplot(figS2, aes(event, spearman_rho)) + geom_col(fill = "#0072B2", width = 0.6) + geom_hline(yintercept = 0) + theme_paper +
-           labs(x = "Held-out critical event", y = "Spearman's rho") + theme(axis.text.x = element_text(angle = 30, hjust = 1)), "Figure S2.png")
+           labs(x = "Held-out critical event", y = "Spearman's rho") + theme(axis.text.x = element_text(angle = 30, hjust = 1)), "Figure S3.png")
 figS3 <- tbl$lisa_by_season %>% mutate(cl = factor(cluster, levels = lisa_levels))
 save_fig(ggplot(figS3, aes(Longitude, Latitude, colour = cl)) + geom_point(size = 1.8) +
            geom_point(data = filter(figS3, in_critical_cluster), shape = 21, size = 3.2, stroke = 0.8, colour = "black", fill = NA) +
            scale_colour_manual(values = lisa_colours, drop = TRUE) + facet_wrap(~ season, ncol = 3) + theme_minimal(base_size = 12) +
-           theme(legend.position = "bottom", axis.text = element_text(size = 7)) + axis_labels + labs(colour = "Cluster type"), "Figure S3.png")
+           theme(legend.position = "bottom", axis.text = element_text(size = 7)) + axis_labels + labs(colour = "Cluster type"), "Figure S1.png")
 
 # ---- 16. Export -------------------------------------------------------------
 section("16. Export")

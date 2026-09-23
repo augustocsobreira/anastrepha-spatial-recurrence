@@ -10,7 +10,7 @@ Analysis code and derived dataset for the manuscript *Spatial Structure and Recu
 | `spatial_recurrence_analysis.ipynb` | The same script as a Google Colab notebook |
 | `data/trap_captures_long.csv` | Derived, de-identified trap-level dataset (one row per trap and inspection date) |
 | `data/study_area_map.png` | Study-area map (Figure 1), produced in QGIS |
-| `output/tables.xlsx` | All tables, one sheet each |
+| `output/tables.xlsx` | All tables, one sheet each; the `S` prefixes follow the numbering of the supplementary tables in the manuscript (order of first citation) |
 | `output/figures/` | Figures 1 to 5 and S1 to S3 of the manuscript (600 dpi); Figure 1 is a copy of the QGIS map |
 | `output/analysis_log.txt` | Console log of the run that produced `output/` |
 | `output/session_info.txt` | R and package versions of that run |
@@ -60,8 +60,8 @@ Missing packages are installed automatically. The mixed models (section 14) take
 | 1 | Data preparation, trap activity by season | `trap_activity`, `traps_per_season` |
 | 2 to 3 | Trap-level summaries, k-nearest-neighbor weights (k = 4), global Moran's I and LISA for the full period | `main_text_numbers` |
 | 3b | Global Moran's I and LISA on the non-critical dates and in each growing season, with FDR correction | `moran_by_season`, `lisa_by_season` |
-| 4 to 5 | Critical events (orchard FTD > 0.5), recurrence classes, capture intensity, Moran's I and LISA during critical events, sensitivity to k, common trap sets, geometry of the High-High cluster | `S1_moran_by_k`, `class_summary`, `moran_common_sets`, `cluster_geometry` |
-| 6 | Threshold scenarios for the recurrence classes, Kruskal-Wallis and Dunn's tests | `S2_class_distribution`, `S3_kruskal_by_scenario`, `S4_dunn_S1_and_S4` to `S7_dunn_S5` |
+| 4 to 5 | Critical events (orchard FTD > 0.5), recurrence classes, capture intensity, Moran's I and LISA during critical events, sensitivity to k, common trap sets, geometry of the High-High cluster | `S2_moran_by_k`, `class_summary`, `moran_common_sets`, `cluster_geometry` |
+| 6 | Threshold scenarios for the recurrence classes, Kruskal-Wallis and Dunn's tests | `S4_class_distribution`, `S5_kruskal_by_scenario`, `S6_dunn_S1_and_S4` to `S9_dunn_S5` |
 | 7 | Critical events cross-referenced with the insecticide applications | `critical_events`, `insecticide_applications` |
 | 8 | Monte Carlo permutation tests (999 permutations); FDR, permutation + FDR and Bonferroni criteria with the High-High trap identifiers; overlap between full-period and critical-event clusters | `moran_global`, `lisa_critical_by_criterion`, `lisa_critical_traps`, `lisa_full_by_criterion`, `hotspot_overlap` |
 | 9 | Cluster stability: leave-one-event-out and k = 3 to 8 | `hotspot_by_k`, `hotspot_loo_by_event`, `hotspot_trap_stability` |
