@@ -23,7 +23,7 @@
 #    3  Global Moran's I and local indicators (LISA), full period
 #    4  Critical events, recurrence classes and capture intensity
 #    5  Global Moran's I and LISA, critical events (Table S2, hotspot)
-#    6  Threshold scenarios for the recurrence classes (Tables S2 to S7)
+#    6  Threshold scenarios for the recurrence classes (Tables S4 to S9)
 #    7  Critical events and insecticide applications
 #    8  Permutation inference and multiple-testing correction
 #    9  Hotspot stability (leave-one-event-out; number of neighbors)
@@ -355,7 +355,7 @@ tbl$class_summary <- trap_data %>% group_by(recurrence_class) %>%
             sd_capture = sd(mean_capture_critical), median_rel_frequency = median(rel_frequency), .groups = "drop")
 print(as.data.frame(tbl$class_summary))
 
-# ---- 6. Threshold scenarios for the recurrence classes (Tables S2 to S7) ----
+# ---- 6. Threshold scenarios for the recurrence classes (Tables S4 to S9) ----
 section("6. Threshold scenarios for the recurrence classes")
 scenarios <- tribble(
   ~scenario, ~description, ~high_threshold, ~medium_threshold,
